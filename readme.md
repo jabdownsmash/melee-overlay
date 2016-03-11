@@ -23,3 +23,5 @@ it's probably either `~/.local/share/dolphin-emu` or `~/.dolphin-emu` for linux
 run dolphin and start the game, the overlay should do stuff, if not dude idk figure it out
 
 if you run the overlay anytime after the css it probably won't work, safest bet is to go to the css after starting the overlay
+
+to get the transparency to work you'll need a compositor, i use compton
