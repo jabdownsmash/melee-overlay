@@ -7,6 +7,7 @@ from p3.state_manager import StateManager
 from p3.state import State, Menu
 from p3.memory_watcher import MemoryWatcher
 from overlay_widgets.components import FrameIndicator 
+from overlay_widgets.fastfall_counter import FastFallCounter
 
 class Container(QtGui.QWidget):
     def __init__(self, board, closeCallback, parent=None):
@@ -14,18 +15,18 @@ class Container(QtGui.QWidget):
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
         self.setMinimumSize(1000,200)
-        quit = QtGui.QPushButton("Calibrate")
-        quit.resize(75, 30)
-        quit.setFont(QtGui.QFont("Times", 18, QtGui.QFont.Bold))
+        # quit = QtGui.QPushButton("Calibrate")
+        # quit.resize(75, 30)
+        # quit.setFont(QtGui.QFont("Times", 18, QtGui.QFont.Bold))
 
         def buttonCB():
             board.calibrating = 2
 
-        QtCore.QObject.connect(quit, QtCore.SIGNAL("clicked()"),buttonCB)
-        quit.show()
+        # QtCore.QObject.connect(quit, QtCore.SIGNAL("clicked()"),buttonCB)
+        # quit.show()
         board.show()
         gridLayout = QtGui.QGridLayout()
-        gridLayout.addWidget(quit, 0, 0)
+        # gridLayout.addWidget(quit, 0, 0)
         # gridLayout.addWidget(frameIndicator, 0, 1)
         gridLayout.addWidget(board, 1, 0, 2, 2)
         gridLayout.setColumnStretch(1, 10)
@@ -107,12 +108,19 @@ class Overlay():
 
         # fi = FrameIndicator()
         # fi.center = 0
-        self.state.players[0].vertical_velocity_changed.append(self.listener)
+        # self.state.players[0].vertical_velocity_changed.append(self.listener)
 
         self.cont = Container(self.board, exitHandler)
         self.cont.show()
-        self.fis = []
-        self.state.frame_changed.append(self.listener2)
+
+
+        fi = FastFallCounter(self.state)
+
+        fi.setParent(self.cont)
+        fi.show()
+
+        # fi.move(100,200)
+        # self.state.frame_changed.append(self.listener2)
         # board.texts.append((200,350,"hello"))
 
         mww = MemoryWatcher(home + '/MemoryWatcher/MemoryWatcher')
@@ -124,38 +132,38 @@ class Overlay():
             if done:
                 break
 
-    def listener2 (self,state):
-        for fi in self.fis:
-            fi.alpha -= .002
-            if fi.alpha < 0:
-                fi.alpha = 0
-            fi.update()
+    # def listener2 (self,state):
+    #     for fi in self.fis:
+    #         fi.alpha -= .002
+    #         if fi.alpha < 0:
+    #             fi.alpha = 0
+    #         fi.update()
 
-    def listener (self,state):
-        # print(str(state.players[0].action_state) + " " + str(state.players[0].fastfall_velocity) + " " + str(state.players[0].vertical_velocity))
-        if state.players[0].vertical_velocity < 0 and state.players[0].vertical_velocity + state.players[0].fastfall_velocity > 0:
-            if self.newFI:
-                self.newFI = False
-                self.fi = FrameIndicator()
+    # def listener (self,state):
+    #     # print(str(state.players[0].action_state) + " " + str(state.players[0].fastfall_velocity) + " " + str(state.players[0].vertical_velocity))
+    #     if state.players[0].vertical_velocity < 0 and state.players[0].vertical_velocity + state.players[0].fastfall_velocity > 0:
+    #         if self.newFI:
+    #             self.newFI = False
+    #             self.fi = FrameIndicator()
 
-                self.fi.setParent(self.cont)
-                self.fi.show()
-                self.fi.center = 0
+    #             self.fi.setParent(self.cont)
+    #             self.fi.center = 0
+    #             self.fi.resize(80,8)
+    #             self.fi.show()
 
-                # self.fi.move(100,200)
-                self.fi.resize(80,8)
-            self.fi.frameCounter += 1
-            self.fi.setFrame(self.fi.frameCounter)
+    #             # self.fi.move(100,200)
+    #         self.fi.frameCounter += 1
+    #         self.fi.setFrame(self.fi.frameCounter)
 
 
-            x,y = self.board.transformPoint(state.players[0].x,-(state.players[0].y + 10))
-            self.fi.move(x  - self.fi.width()/2,y)
-        else:
-            self.newFI = True
-            try:
-                self.fis.append(self.fi)
-            except AttributeError:
-                pass
+    #         x,y = self.board.transformPoint(state.players[0].x,-(state.players[0].y + 10))
+    #         self.fi.move(x  - self.fi.width()/2,y)
+    #     else:
+    #         self.newFI = True
+    #         try:
+    #             self.fis.append(self.fi)
+    #         except AttributeError:
+    #             pass
 
 if __name__ == '__main__':
     Overlay()
