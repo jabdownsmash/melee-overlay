@@ -11,15 +11,18 @@ class FrameIndicator(QtGui.QWidget):
         self.center = (self.numFrames - 1)/2
         self.alpha = 1
 
+        self.blank = True
+
     def setFrame(self,frame):
         self.frame = frame
+        self.blank = False
         self.update()
 
     def paintEvent(self,event):
         painter = QtGui.QPainter(self)
 
         for i in range(self.numFrames):
-            if self.state == 'blank':
+            if self.blank:
                 painter.setPen(QtGui.QColor(55,55,55,self.alpha * 255))
                 painter.setBrush(QtGui.QColor(55,55,55,self.alpha * 255))
             else: 
