@@ -6,10 +6,10 @@ from PySide import QtCore, QtGui
 from p3.state_manager import StateManager
 from p3.state import State, Menu
 from p3.memory_watcher import MemoryWatcher
-from transitions import Machine
+from overlay_widgets.components import FrameIndicator 
 
 class Container(QtGui.QWidget):
-    def __init__(self, board, closeCallback, frameIndicator, parent=None):
+    def __init__(self, board, closeCallback, parent=None):
         QtGui.QWidget.__init__(self, parent)
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
@@ -22,59 +22,20 @@ class Container(QtGui.QWidget):
             board.calibrating = 2
 
         QtCore.QObject.connect(quit, QtCore.SIGNAL("clicked()"),buttonCB)
-        # quit.show()
-        # board.show()
+        quit.show()
+        board.show()
         gridLayout = QtGui.QGridLayout()
-        # gridLayout.addWidget(quit, 0, 0)
-        gridLayout.addWidget(frameIndicator, 0, 1)
-        # gridLayout.addWidget(board, 1, 0, 2, 2)
+        gridLayout.addWidget(quit, 0, 0)
+        # gridLayout.addWidget(frameIndicator, 0, 1)
+        gridLayout.addWidget(board, 1, 0, 2, 2)
         gridLayout.setColumnStretch(1, 10)
         self.setLayout(gridLayout)
+        # self.addWidget(frameIndicator)
         # self.show()
         self.ccb = closeCallback
 
     def closeEvent(self, event):
         self.ccb()
-
-class FrameIndicator(QtGui.QWidget):
-    def __init__(self, parent=None):
-        QtGui.QWidget.__init__(self, parent)
-
-        self.frame = 0
-        self.numFrames = 7
-        self.frameCounter = -1
-        self.center = (self.numFrames - 1)/2
-
-        self.machine = Machine(model=self, states=['blank','show'], initial='blank')
-        self.machine.add_transition(trigger='setFrame', source=['blank','show'], dest='show', before='setRects')
-
-    def setRects(self,frame):
-        self.frame = frame
-        self.update()
-
-    def paintEvent(self,event):
-        painter = QtGui.QPainter(self)
-
-        for i in range(self.numFrames):
-            if self.state == 'blank':
-                painter.setPen(QtGui.QColor(55,55,55,255))
-                painter.setBrush(QtGui.QColor(55,55,55,255))
-            else: 
-                if (i == 0 and self.frame <= -self.center and self.center > 0) or (i - self.center == self.frame and self.frame < 0):
-                    painter.setPen(QtGui.QColor(55,55,255,255))
-                    painter.setBrush(QtGui.QColor(55,55,255,255))
-                elif ((i == self.numFrames - 1) and (self.frame >= self.numFrames - self.center) and self.center < (self.numFrames - 1)) or (i - self.center == self.frame and self.frame > 0):
-                    painter.setPen(QtGui.QColor(255,55,55,255))
-                    painter.setBrush(QtGui.QColor(255,55,55,255))
-                elif self.frame == 0 and i == self.center:
-                    painter.setPen(QtGui.QColor(255,255,255,255))
-                    painter.setBrush(QtGui.QColor(255,255,255,255))
-                else:
-                    painter.setPen(QtGui.QColor(55,55,55,255))
-                    painter.setBrush(QtGui.QColor(55,55,55,255))
-            # painter.drawRect(QtCore.QRect(0, i * self.height()/self.numFrames, self.width(), self.height()/self.numFrames - self.height()/21))
-            painter.drawRect(QtCore.QRect(i * self.width()/self.numFrames, 0, self.width()/self.numFrames - self.width()/21, self.height() - 1))
-
 
 class Melee(QtGui.QWidget):
     def __init__(self, parent=None):
@@ -90,32 +51,12 @@ class Melee(QtGui.QWidget):
         self.y2 = 0
         self.calibrating = 0
 
-
-    def paintEvent(self,event):
-        painter = QtGui.QPainter(self)
+    def transformPoint(self,x,y):
         scale = (self.x2 - self.x1)/(88.47*2)
         xOffset = self.x1 + (self.x2 - self.x1)/2
         yOffset = (self.y1 + self.y2)/2
 
-        for text in self.texts:
-            painter.setPen(QtCore.Qt.white)
-            painter.setFont(QtGui.QFont("Courier", 20, QtGui.QFont.Bold))
-            painter.save()
-            painter.translate(text[0]*scale + xOffset, text[1]*scale + yOffset)
-            painter.drawText(self.rect(), text[2])
-            painter.restore()
-
-        for rect in self.rectangles:
-            painter.setPen(QtCore.Qt.white)
-            painter.setBrush(QtGui.QColor(*rect[4]))
-            painter.drawRect(QtCore.QRect(rect[0]*scale + xOffset - rect[2]/2, -rect[1]*scale + yOffset - rect[3]/2, rect[2], rect[3]))
-
-        # painter.setPen(QtCore.Qt.NoPen)
-        # painter.setBrush(QtCore.Qt.blue)
-        # painter.save()
-        # painter.translate(0, self.height())
-        # painter.drawPie(QtCore.QRect(-35, -35, 70, 70), 0, 90 * 16)
-        # painter.restore()
+        return (x*scale + xOffset, y*scale + yOffset)
 
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
@@ -133,72 +74,88 @@ class Melee(QtGui.QWidget):
                 self.calibrating -= 1
         self.update()
 
-def listener (state,fi):
-    # print(str(state.players[0].action_state) + " " + str(state.players[0].fastfall_velocity) + " " + str(state.players[0].vertical_velocity))
-    if state.players[0].vertical_velocity < 0 and state.players[0].vertical_velocity + state.players[0].fastfall_velocity > 0:
-        fi.frameCounter += 1
-        fi.setFrame(fi.frameCounter)
-    else:
-        fi.frameCounter = -1
 
-def start(setup):
+class Overlay():
+    def __init__(self):
 
-    if len(sys.argv) != 2:
-        sys.exit('Usage: ' + sys.argv[0] + ' dolphin-home')
-    home = sys.argv[1]
+        if len(sys.argv) != 2:
+            sys.exit('Usage: ' + sys.argv[0] + ' dolphin-home')
+        home = sys.argv[1]
 
-    state = State()
-    sm = StateManager(state)
+        self.state = State()
+        sm = StateManager(self.state)
 
-    # state.players[0].hitlag_counter_changed.append(listener)
+        # state.players[0].hitlag_counter_changed.append(listener)
 
-    locationsTxt = ''
-    for i in sm.locations():
-        locationsTxt += i + '\n'
+        locationsTxt = ''
+        for i in sm.locations():
+            locationsTxt += i + '\n'
 
-    with open(home + '/MemoryWatcher/Locations.txt', 'w') as file:
-        file.write(locationsTxt)
+        with open(home + '/MemoryWatcher/Locations.txt', 'w') as file:
+            file.write(locationsTxt)
 
-    done = False
+        done = False
 
-    def exitHandler():
-        nonlocal done
-        done = True
+        def exitHandler():
+            nonlocal done
+            done = True
 
-    app = QtGui.QApplication(sys.argv)
+        app = QtGui.QApplication(sys.argv)
 
-    board = Melee()
+        self.board = Melee()
+        self.newFI = True
 
-    fi = FrameIndicator()
-    fi.center = 0
-    state.players[0].vertical_velocity_changed.append(lambda x: listener(x,fi))
+        # fi = FrameIndicator()
+        # fi.center = 0
+        self.state.players[0].vertical_velocity_changed.append(self.listener)
 
-    cont = Container(board, exitHandler,fi)
-    cont.show()
-    setup(state,board,cont)
-    # board.texts.append((200,350,"hello"))
+        self.cont = Container(self.board, exitHandler)
+        self.cont.show()
+        self.fis = []
+        self.state.frame_changed.append(self.listener2)
+        # board.texts.append((200,350,"hello"))
 
-    mww = MemoryWatcher(home + '/MemoryWatcher/MemoryWatcher')
-    for returnValue in mww:
-        if returnValue is not None:
-            address, value = returnValue
-            sm.handle(address,value)
-        app.processEvents()
-        if done:
-            break
+        mww = MemoryWatcher(home + '/MemoryWatcher/MemoryWatcher')
+        for returnValue in mww:
+            if returnValue is not None:
+                address, value = returnValue
+                sm.handle(address,value)
+            app.processEvents()
+            if done:
+                break
 
-# sys.exit(app.exec_())
-def zoxx(state,board,cont):
-    kek = [300,400,100,100,(255,0,0,60)]
-    board.rectangles.append(kek)
+    def listener2 (self,state):
+        for fi in self.fis:
+            fi.alpha -= .002
+            if fi.alpha < 0:
+                fi.alpha = 0
+            fi.update()
 
-    def listener2 (state):
-        if state.menu == Menu.Game:
-            kek[0] = state.players[0].x
-            kek[1] = state.players[0].y
-            board.update()
-    state.frame_changed.append(listener2)
-    # state.players[0].x_changed.append(listener2)
+    def listener (self,state):
+        # print(str(state.players[0].action_state) + " " + str(state.players[0].fastfall_velocity) + " " + str(state.players[0].vertical_velocity))
+        if state.players[0].vertical_velocity < 0 and state.players[0].vertical_velocity + state.players[0].fastfall_velocity > 0:
+            if self.newFI:
+                self.newFI = False
+                self.fi = FrameIndicator()
+
+                self.fi.setParent(self.cont)
+                self.fi.show()
+                self.fi.center = 0
+
+                # self.fi.move(100,200)
+                self.fi.resize(80,8)
+            self.fi.frameCounter += 1
+            self.fi.setFrame(self.fi.frameCounter)
+
+
+            x,y = self.board.transformPoint(state.players[0].x,-(state.players[0].y + 10))
+            self.fi.move(x  - self.fi.width()/2,y)
+        else:
+            self.newFI = True
+            try:
+                self.fis.append(self.fi)
+            except AttributeError:
+                pass
 
 if __name__ == '__main__':
-    start(zoxx)
+    Overlay()
