@@ -11,7 +11,7 @@ get a version of dolphin that has memorywatcher stuff. smash ladder netplay vers
 
 gotta have melee obviously
 
-get python 3 (idk how python 2 will fare), pyside, and [transitions](https://github.com/tyarkoni/transitions), via however you install python stuff based on your setup
+get python 3 (idk how python 2 will fare) and pyside, via however you install python stuff based on your setup
 
 clone this branch of my fork of [p3](https://github.com/sepharoth213/p3/tree/more_state_data). i'll eventually pr some of this into the official p3 repo but for now this will have to do. either add the git dir to your PYTHONPATH or take the p3 folder _inside_ the git dir and put it in this folder.
 
