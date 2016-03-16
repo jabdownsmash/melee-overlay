@@ -8,73 +8,8 @@ from p3.state import State, Menu
 from p3.memory_watcher import MemoryWatcher
 from overlay_widgets.components import FrameIndicator 
 from overlay_widgets.fastfall_counter import FastFallCounter
-
-class Container(QtGui.QWidget):
-    def __init__(self, board, closeCallback, parent=None):
-        QtGui.QWidget.__init__(self, parent)
-        self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
-        self.setAttribute(QtCore.Qt.WA_TranslucentBackground)
-        self.setMinimumSize(1000,200)
-        # quit = QtGui.QPushButton("Calibrate")
-        # quit.resize(75, 30)
-        # quit.setFont(QtGui.QFont("Times", 18, QtGui.QFont.Bold))
-
-        def buttonCB():
-            board.calibrating = 2
-
-        # QtCore.QObject.connect(quit, QtCore.SIGNAL("clicked()"),buttonCB)
-        # quit.show()
-        board.show()
-        gridLayout = QtGui.QGridLayout()
-        # gridLayout.addWidget(quit, 0, 0)
-        # gridLayout.addWidget(frameIndicator, 0, 1)
-        gridLayout.addWidget(board, 1, 0, 2, 2)
-        gridLayout.setColumnStretch(1, 10)
-        self.setLayout(gridLayout)
-        # self.addWidget(frameIndicator)
-        # self.show()
-        self.ccb = closeCallback
-
-    def closeEvent(self, event):
-        self.ccb()
-
-class Melee(QtGui.QWidget):
-    def __init__(self, parent=None):
-        QtGui.QWidget.__init__(self, parent)
-
-        self.rectangles = []
-        self.texts = []
-        self.kek = 0
-
-        self.x1 = 0
-        self.x2 = 100
-        self.y1 = 0
-        self.y2 = 0
-        self.calibrating = 0
-
-    def transformPoint(self,x,y):
-        scale = (self.x2 - self.x1)/(88.47*2)
-        xOffset = self.x1 + (self.x2 - self.x1)/2
-        yOffset = (self.y1 + self.y2)/2
-
-        return (x*scale + xOffset, y*scale + yOffset)
-
-    def mousePressEvent(self, event):
-        if event.button() == QtCore.Qt.LeftButton:
-            x = event.pos().x()
-            y = event.pos().y()
-            print("x: " + str(x) + " y: " + str(y))
-            # self.mcb(x,y)
-            if self.calibrating == 2:
-                self.x1 = x
-                self.y1 = y
-                self.calibrating -= 1
-            elif self.calibrating == 1:
-                self.x2 = x
-                self.y2 = y
-                self.calibrating -= 1
-        self.update()
-
+from screens.calibration import Calibration
+from container import Container
 
 class Overlay():
     def __init__(self):
@@ -103,14 +38,14 @@ class Overlay():
 
         app = QtGui.QApplication(sys.argv)
 
-        self.board = Melee()
+        # self.board = Melee()
         self.newFI = True
 
         # fi = FrameIndicator()
         # fi.center = 0
         # self.state.players[0].vertical_velocity_changed.append(self.listener)
 
-        self.cont = Container(self.board, exitHandler)
+        self.cont = Container(exitHandler)
         self.cont.show()
 
 
@@ -118,6 +53,7 @@ class Overlay():
 
         fi.setParent(self.cont)
         fi.show()
+        fi.resize(1000,100)
 
         # fi.move(100,200)
         # self.state.frame_changed.append(self.listener2)
