@@ -38,7 +38,7 @@ class Overlay():
             done = True
 
         #create container
-        cont = Container(exitHandler)
+        cont = Container(2000,500,exitHandler)
         cont.show()
 
         #spawn fastfall counter
